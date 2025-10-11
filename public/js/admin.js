@@ -17,6 +17,9 @@ const gameStatus = document.getElementById('game-status');
 let quizCode = '';
 let lastScoreboard = [];
 
+connectStatus.textContent =
+  'Введите короткий код (например RETRO) и нажмите «Подключиться». Если такого кода ещё нет — квиз создастся автоматически.';
+
 const renderQuestions = (questions) => {
   questionsList.innerHTML = '';
   questions.forEach((question) => {
