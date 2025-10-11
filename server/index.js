@@ -36,6 +36,110 @@ const listPlayerSummaries = (quiz) =>
 const buildScoreboard = (quiz) =>
   listPlayerSummaries(quiz).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ru'));
 
+const persistentDir = path.join(__dirname, '..', 'data');
+const quizzesFilePath = path.join(persistentDir, 'quizzes.json');
+
+fs.mkdirSync(persistentDir, { recursive: true });
+
+const serializeQuiz = (quiz) => ({
+  code: quiz.code,
+  questions: quiz.questions,
+  currentQuestionIndex: quiz.currentQuestionIndex,
+  playerRecords: Array.from(quiz.playerRecords.entries()).map(([key, record]) => ({
+    key,
+    name: record.name,
+    score: record.score
+  })),
+  lastResults: quiz.lastResults,
+  finalResults: quiz.finalResults
+});
+
+const deserializeQuiz = (rawQuiz) => {
+  if (!rawQuiz || !rawQuiz.code) {
+    return null;
+  }
+
+  const quiz = defaultQuiz(rawQuiz.code);
+  quiz.questions = Array.isArray(rawQuiz.questions) ? rawQuiz.questions : [];
+  if (typeof rawQuiz.currentQuestionIndex === 'number') {
+    const maxIndex = quiz.questions.length - 1;
+    quiz.currentQuestionIndex = Math.min(Math.max(rawQuiz.currentQuestionIndex, -1), maxIndex);
+  }
+  quiz.questionActive = false;
+  const playerRecords = Array.isArray(rawQuiz.playerRecords) ? rawQuiz.playerRecords : [];
+  playerRecords.forEach((record) => {
+    if (!record || !record.key) {
+      return;
+    }
+    quiz.playerRecords.set(record.key, {
+      name: record.name || record.key,
+      score: typeof record.score === 'number' ? record.score : 0,
+      answeredCurrent: false,
+      lastAnswerCorrect: null,
+      socketId: null,
+      key: record.key
+    });
+  });
+  quiz.lastResults = rawQuiz.lastResults || null;
+  quiz.finalResults = rawQuiz.finalResults || null;
+  return quiz;
+};
+
+const writeQuizzesToDisk = () => {
+  const payload = {
+    version: 1,
+    quizzes: Array.from(quizzes.values()).map(serializeQuiz)
+  };
+
+  const tmpPath = `${quizzesFilePath}.tmp`;
+  try {
+    fs.writeFileSync(tmpPath, JSON.stringify(payload, null, 2), 'utf-8');
+    fs.renameSync(tmpPath, quizzesFilePath);
+  } catch (error) {
+    console.error('Failed to persist quizzes:', error);
+    try {
+      if (fs.existsSync(tmpPath)) {
+        fs.unlinkSync(tmpPath);
+      }
+    } catch (cleanupError) {
+      console.error('Failed to clean up temp persistence file:', cleanupError);
+    }
+  }
+};
+
+let persistTimeout = null;
+const schedulePersist = () => {
+  if (persistTimeout) {
+    clearTimeout(persistTimeout);
+  }
+  persistTimeout = setTimeout(() => {
+    persistTimeout = null;
+    writeQuizzesToDisk();
+  }, 250);
+};
+
+const loadPersistedQuizzes = () => {
+  if (!fs.existsSync(quizzesFilePath)) {
+    return;
+  }
+
+  try {
+    const rawContent = fs.readFileSync(quizzesFilePath, 'utf-8');
+    const parsed = JSON.parse(rawContent);
+    const storedQuizzes = parsed && Array.isArray(parsed.quizzes) ? parsed.quizzes : [];
+    storedQuizzes.forEach((storedQuiz) => {
+      const quiz = deserializeQuiz(storedQuiz);
+      if (quiz) {
+        quizzes.set(quiz.code, quiz);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to load quizzes from disk:', error);
+  }
+};
+
+loadPersistedQuizzes();
+
 const getOrCreateQuiz = (code) => {
   if (!quizzes.has(code)) {
     quizzes.set(code, defaultQuiz(code));
@@ -172,6 +276,8 @@ io.on('connection', (socket) => {
     quiz.lastResults = null;
     quiz.finalResults = null;
 
+    schedulePersist();
+
     socket.join(normalizedCode);
 
     if (quiz.displaySockets.size > 0) {
@@ -217,6 +323,8 @@ io.on('connection', (socket) => {
     };
     quiz.questions.push(question);
 
+    schedulePersist();
+
     socket.emit('adminState', {
       code,
       questions: sanitizeQuestions(quiz.questions),
@@ -253,6 +361,8 @@ io.on('connection', (socket) => {
     quiz.activeQuestionPayload = null;
     quiz.lastResults = null;
     quiz.finalResults = null;
+
+    schedulePersist();
 
     socket.emit('adminState', {
       code,
@@ -309,6 +419,8 @@ io.on('connection', (socket) => {
     quiz.lastResults = null;
     quiz.finalResults = null;
 
+    schedulePersist();
+
     socket.emit('adminState', {
       code,
       questions: sanitizeQuestions(quiz.questions),
@@ -362,6 +474,8 @@ io.on('connection', (socket) => {
 
     quiz.activeQuestionPayload = payload;
 
+    schedulePersist();
+
     io.to(code).emit('questionStarted', payload);
   });
 
@@ -414,6 +528,8 @@ io.on('connection', (socket) => {
     quiz.lastResults = resultPayload;
     quiz.finalResults = null;
 
+    schedulePersist();
+
     io.to(code).emit('questionResults', resultPayload);
   });
 
@@ -431,6 +547,8 @@ io.on('connection', (socket) => {
     };
 
     quiz.finalResults = finalPayload;
+
+    schedulePersist();
 
     io.to(code).emit('quizFinished', finalPayload);
   });
@@ -453,6 +571,8 @@ io.on('connection', (socket) => {
       player.answeredCurrent = false;
       player.lastAnswerCorrect = null;
     });
+
+    schedulePersist();
 
     const scoreboard = buildScoreboard(quiz);
     const message = 'Ведущий начал игру заново. Ждите новый вопрос!';
@@ -522,6 +642,8 @@ io.on('connection', (socket) => {
 
     quiz.players.set(socket.id, playerRecord);
 
+    schedulePersist();
+
     socket.join(normalizedCode);
     socket.emit('joined', {
       code: normalizedCode,
@@ -588,6 +710,8 @@ io.on('connection', (socket) => {
       optionIndex: selectedIndex,
       isCorrect
     });
+
+    schedulePersist();
 
     socket.emit('answerAccepted', {
       isCorrect,
