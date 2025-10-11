@@ -8,9 +8,7 @@ const joinPanel = document.getElementById('join-panel');
 const waitingPanel = document.getElementById('waiting-panel');
 const questionPanel = document.getElementById('question-panel');
 const questionCounter = document.getElementById('question-counter');
-const questionText = document.getElementById('question-text');
-const questionImageWrapper = document.getElementById('question-image-wrapper');
-const questionImage = document.getElementById('question-image');
+const questionInstructions = document.getElementById('question-instructions');
 const optionsContainer = document.getElementById('options');
 const answerStatus = document.getElementById('answer-status');
 const resultsPanel = document.getElementById('results-panel');
@@ -75,33 +73,26 @@ socket.on('joined', ({ code }) => {
   joinPanel.hidden = true;
   waitingPanel.hidden = false;
   joinStatus.textContent = '';
-  systemMessages.textContent = 'Ждём новый вопрос от ведущего.';
+  systemMessages.textContent = 'Ждём новый вопрос от ведущего. Следите за экраном трансляции!';
 });
 
 socket.on('joinError', (message) => {
   joinStatus.textContent = message;
 });
 
-socket.on('questionStarted', ({ index, total, prompt, imageUrl, options }) => {
+socket.on('questionStarted', ({ index, total, options }) => {
   waitingPanel.hidden = true;
   resultsPanel.hidden = true;
   questionPanel.hidden = false;
   resetQuestionUI();
   questionCounter.textContent = `Вопрос ${index} из ${total}`;
-  questionText.textContent = prompt;
-
-  if (imageUrl) {
-    questionImageWrapper.hidden = false;
-    questionImage.src = imageUrl;
-  } else {
-    questionImageWrapper.hidden = true;
-    questionImage.src = '';
-  }
+  questionInstructions.textContent = 'Смотрите на общий экран и выберите подходящий номер.';
 
   options.forEach((option, optionIndex) => {
     const button = document.createElement('button');
     button.className = 'option-button';
     button.textContent = `${optionIndex + 1}. ${option}`;
+    button.title = option;
     button.addEventListener('click', () => {
       if (hasAnsweredCurrent) return;
       socket.emit('submitAnswer', { code: quizCode, optionIndex });

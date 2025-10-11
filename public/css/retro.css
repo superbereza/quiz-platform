@@ -15,6 +15,10 @@ body {
   padding: 24px 32px 48px;
 }
 
+.wrapper.wide {
+  max-width: 1180px;
+}
+
 .wrapper.narrow {
   max-width: 720px;
 }
@@ -54,6 +58,10 @@ body {
   padding: 16px 20px;
   box-shadow: inset 0 0 12px rgba(255, 191, 0, 0.4);
   backdrop-filter: blur(2px);
+}
+
+.panel.stage {
+  min-height: 320px;
 }
 
 .panel h2 {
@@ -100,6 +108,13 @@ body {
 
 .button.tertiary {
   background: linear-gradient(180deg, #98ff96, #fff8a3);
+}
+
+.inline-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
 }
 
 label {
@@ -165,6 +180,35 @@ textarea {
   font-weight: bold;
 }
 
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 2px solid #ffe680;
+  background: rgba(255, 191, 0, 0.3);
+  border-radius: 18px;
+  font-weight: bold;
+  color: #001f3f;
+  background-image: linear-gradient(180deg, #fff8a3, #ffd166);
+  margin-right: 8px;
+}
+
+.question-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.options-list {
+  margin-top: 16px;
+  padding-left: 24px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.options-list li {
+  margin-bottom: 8px;
+}
+
 .image-wrapper {
   margin: 12px 0;
   text-align: center;
@@ -201,6 +245,61 @@ textarea {
 
 .scoreboard th {
   background: rgba(255, 191, 0, 0.3);
+}
+
+.scoreboard.jumbo th,
+.scoreboard.jumbo td {
+  font-size: 18px;
+  padding: 10px 12px;
+}
+
+.results-breakdown {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, 30%) 60px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  background: rgba(255, 191, 0, 0.12);
+  padding: 8px 12px;
+  border: 1px dashed rgba(255, 191, 0, 0.6);
+}
+
+.breakdown-row.correct {
+  border-color: #9be7ff;
+  box-shadow: 0 0 10px rgba(155, 231, 255, 0.6);
+}
+
+.breakdown-label {
+  font-size: 18px;
+}
+
+.breakdown-bar {
+  height: 16px;
+  background: linear-gradient(90deg, rgba(155, 231, 255, 0.7), rgba(255, 223, 94, 0.9));
+  border: 1px solid rgba(255, 191, 0, 0.9);
+  box-shadow: inset 0 0 6px rgba(0, 31, 63, 0.6);
+}
+
+.breakdown-count {
+  font-size: 20px;
+  font-weight: bold;
+  text-align: right;
+}
+
+.display-main {
+  display: grid;
+  gap: 20px;
+}
+
+.panel.connected {
+  border-color: #9be7ff;
+  box-shadow: inset 0 0 16px rgba(155, 231, 255, 0.5);
 }
 
 .mini-panel {
