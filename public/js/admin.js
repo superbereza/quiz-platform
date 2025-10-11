@@ -6,6 +6,9 @@ const connectStatus = document.getElementById('connect-status');
 const questionPanel = document.getElementById('question-panel');
 const controlPanel = document.getElementById('control-panel');
 const questionForm = document.getElementById('question-form');
+const imageUrlInput = document.getElementById('question-image');
+const imageUploadInput = document.getElementById('question-image-upload');
+const imageUploadStatus = document.getElementById('image-upload-status');
 const questionsList = document.getElementById('questions');
 const playersList = document.getElementById('players');
 const scoreboardTable = document.getElementById('scoreboard');
@@ -16,6 +19,68 @@ const gameStatus = document.getElementById('game-status');
 
 let quizCode = '';
 let lastScoreboard = [];
+let uploadingImage = false;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const setUploadStatus = (message = '', variant = 'idle') => {
+  if (!imageUploadStatus) return;
+  imageUploadStatus.textContent = message;
+  imageUploadStatus.classList.remove('error', 'success', 'loading');
+  if (variant !== 'idle') {
+    imageUploadStatus.classList.add(variant);
+  }
+};
+
+if (imageUploadInput) {
+  imageUploadInput.addEventListener('change', async (event) => {
+    const [file] = event.target.files;
+    if (!file) {
+      setUploadStatus();
+      return;
+    }
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      setUploadStatus('Поддерживаются только JPG и PNG.', 'error');
+      imageUploadInput.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setUploadStatus('Файл больше 5 МБ. Выберите изображение поменьше.', 'error');
+      imageUploadInput.value = '';
+      return;
+    }
+
+    uploadingImage = true;
+    setUploadStatus('Загружаем картинку...', 'loading');
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        const message = errorPayload.error || 'Не удалось загрузить файл.';
+        throw new Error(message);
+      }
+
+      const data = await response.json();
+      imageUrlInput.value = data.url || '';
+      setUploadStatus('Картинка загружена и готова к вопросу!', 'success');
+    } catch (error) {
+      setUploadStatus(error.message || 'Не удалось загрузить файл.', 'error');
+      imageUrlInput.value = '';
+    } finally {
+      uploadingImage = false;
+      imageUploadInput.value = '';
+    }
+  });
+}
 
 connectStatus.textContent =
   'Введите короткий код (например RETRO) и нажмите «Подключиться». Если такого кода ещё нет — квиз создастся автоматически.';
@@ -71,8 +136,12 @@ questionForm.addEventListener('submit', (event) => {
     connectStatus.textContent = 'Сначала подключитесь к квизу.';
     return;
   }
+  if (uploadingImage) {
+    setUploadStatus('Подождите, картинка ещё загружается.', 'loading');
+    return;
+  }
   const prompt = document.getElementById('question-text').value;
-  const imageUrl = document.getElementById('question-image').value;
+  const imageUrl = imageUrlInput.value.trim();
   const options = Array.from(document.querySelectorAll('.option-input')).map((input) => input.value);
   const correctIndex = document.getElementById('correct-index').value;
 
@@ -86,6 +155,12 @@ questionForm.addEventListener('submit', (event) => {
 
   questionForm.reset();
   document.getElementById('correct-index').value = '0';
+  imageUrlInput.value = '';
+  setUploadStatus();
+  uploadingImage = false;
+  if (imageUploadInput) {
+    imageUploadInput.value = '';
+  }
 });
 
 launchButton.addEventListener('click', () => {

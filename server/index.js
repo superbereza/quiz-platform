@@ -1,6 +1,8 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const http = require('http');
+const multer = require('multer');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -72,7 +74,44 @@ const sanitizeQuestions = (questions) =>
   }));
 
 const publicDir = path.join(__dirname, '..', 'public');
+const uploadsDir = path.join(__dirname, '..', 'uploads');
 
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext);
+    const safeBase = base
+      .normalize('NFKD')
+      .replace(/[^a-zA-Z0-9-_]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'image';
+    const stamp = Date.now();
+    cb(null, `${safeBase}-${stamp}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (['image/jpeg', 'image/png'].includes(file.mimetype)) {
+      cb(null, true);
+      return;
+    }
+    const error = new Error('UNSUPPORTED_FILE_TYPE');
+    error.code = 'UNSUPPORTED_FILE_TYPE';
+    cb(error);
+  }
+});
+
+const singleImageUpload = upload.single('image');
+
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
 
 app.get(['/display', '/display.html'], (_req, res) => {
@@ -81,6 +120,26 @@ app.get(['/display', '/display.html'], (_req, res) => {
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.post('/api/upload-image', (req, res) => {
+  singleImageUpload(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Файл больше 5 МБ. Выберите изображение поменьше.' });
+      }
+      if (err.code === 'UNSUPPORTED_FILE_TYPE') {
+        return res.status(400).json({ error: 'Поддерживаются только JPG и PNG.' });
+      }
+      return res.status(400).json({ error: 'Не удалось загрузить файл.' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Файл не загружен.' });
+    }
+
+    return res.json({ url: `/uploads/${req.file.filename}` });
+  });
 });
 
 io.on('connection', (socket) => {

@@ -144,6 +144,35 @@ textarea {
   gap: 12px;
 }
 
+.upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.upload-controls input[type='file'] {
+  color: #ffe680;
+}
+
+.upload-status {
+  font-size: 13px;
+  min-height: 18px;
+  color: #9be7ff;
+}
+
+.upload-status.loading {
+  color: #ffe680;
+}
+
+.upload-status.success {
+  color: #b5ffd9;
+}
+
+.upload-status.error {
+  color: #ff8da1;
+}
+
 .status-line {
   min-height: 20px;
   font-size: 14px;
