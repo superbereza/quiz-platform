@@ -252,6 +252,24 @@ socket.on('quizFinished', ({ scoreboard, totalQuestions }) => {
   }
 });
 
+socket.on('quizRestarted', ({ scoreboard, message }) => {
+  hasAnsweredCurrent = false;
+  pendingAnsweredFlag = false;
+  resetQuestionUI();
+  questionPanel.hidden = true;
+  resultsPanel.hidden = true;
+  waitingPanel.hidden = false;
+  resultsSummary.textContent = '';
+  finalMessage.textContent = '';
+  answerStatus.textContent = '';
+  if (Array.isArray(scoreboard) && scoreboard.length > 0) {
+    renderScoreboard(scoreboard);
+  } else {
+    resultsTable.innerHTML = '';
+  }
+  systemMessages.textContent = message || 'Ведущий начал игру заново. Готовьтесь к новому старту!';
+});
+
 socket.on('systemMessage', (message) => {
   systemMessages.textContent = message;
 });

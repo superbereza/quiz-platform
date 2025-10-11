@@ -110,6 +110,11 @@ body {
   background: linear-gradient(180deg, #98ff96, #fff8a3);
 }
 
+.button.danger {
+  background: linear-gradient(180deg, #ff6b6b, #ffb199);
+  color: #2b0000;
+}
+
 .inline-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

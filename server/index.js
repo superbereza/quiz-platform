@@ -343,6 +343,43 @@ io.on('connection', (socket) => {
     io.to(code).emit('quizFinished', finalPayload);
   });
 
+  socket.on('restartQuiz', ({ code }) => {
+    const quiz = ensureAdmin(socket, code);
+    if (!quiz) {
+      return;
+    }
+
+    quiz.currentQuestionIndex = -1;
+    quiz.questionActive = false;
+    quiz.answers = new Map();
+    quiz.activeQuestionPayload = null;
+    quiz.lastResults = null;
+    quiz.finalResults = null;
+
+    quiz.playerRecords.forEach((player) => {
+      player.score = 0;
+      player.answeredCurrent = false;
+      player.lastAnswerCorrect = null;
+    });
+
+    const scoreboard = buildScoreboard(quiz);
+    const message = 'Ведущий начал игру заново. Ждите новый вопрос!';
+
+    io.to(code).emit('quizRestarted', { scoreboard, message });
+
+    socket.emit('adminState', {
+      code,
+      questions: sanitizeQuestions(quiz.questions),
+      players: listPlayerSummaries(quiz),
+      currentQuestionIndex: quiz.currentQuestionIndex,
+      questionActive: quiz.questionActive
+    });
+
+    if (quiz.adminSocketId) {
+      io.to(quiz.adminSocketId).emit('playersUpdated', listPlayerSummaries(quiz));
+    }
+  });
+
   socket.on('joinQuiz', ({ code, name }) => {
     if (!code || !name) {
       socket.emit('joinError', 'Нужны код квиза и логин.');

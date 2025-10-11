@@ -15,6 +15,7 @@ const scoreboardTable = document.getElementById('scoreboard');
 const launchButton = document.getElementById('launch-question');
 const revealButton = document.getElementById('reveal-results');
 const finalButton = document.getElementById('final-results');
+const restartButton = document.getElementById('restart-quiz');
 const gameStatus = document.getElementById('game-status');
 
 let quizCode = '';
@@ -197,6 +198,17 @@ finalButton.addEventListener('click', () => {
   socket.emit('showFinal', { code: quizCode });
 });
 
+if (restartButton) {
+  restartButton.addEventListener('click', () => {
+    if (!quizCode || restartButton.disabled) return;
+    const confirmation = window.confirm('Перезапустить квиз? Очки игроков обнулятся.');
+    if (!confirmation) {
+      return;
+    }
+    socket.emit('restartQuiz', { code: quizCode });
+  });
+}
+
 socket.on('adminState', ({ code, questions, players, currentQuestionIndex, questionActive }) => {
   quizCode = code;
   connectStatus.textContent = `Вы управляете квизом ${code}. Добавьте вопросы и зовите игроков!`;
@@ -207,6 +219,9 @@ socket.on('adminState', ({ code, questions, players, currentQuestionIndex, quest
   if (!questionActive) {
     launchButton.disabled = false;
     revealButton.disabled = true;
+  }
+  if (restartButton) {
+    restartButton.disabled = false;
   }
   if (currentQuestionIndex >= 0) {
     gameStatus.textContent = `Последний активный вопрос: ${currentQuestionIndex + 1}`;
@@ -226,6 +241,9 @@ socket.on('questionStarted', ({ index, total, prompt }) => {
   launchButton.disabled = true;
   revealButton.disabled = false;
   finalButton.disabled = true;
+  if (restartButton) {
+    restartButton.disabled = false;
+  }
 });
 
 socket.on('questionResults', ({ correctOption, correctPlayersCount, scoreboard, isLastQuestion }) => {
@@ -235,6 +253,9 @@ socket.on('questionResults', ({ correctOption, correctPlayersCount, scoreboard, 
   finalButton.disabled = !isLastQuestion;
   lastScoreboard = scoreboard;
   renderScoreboard(scoreboard);
+  if (restartButton) {
+    restartButton.disabled = false;
+  }
 });
 
 socket.on('quizFinished', ({ scoreboard, totalQuestions }) => {
@@ -244,6 +265,23 @@ socket.on('quizFinished', ({ scoreboard, totalQuestions }) => {
   launchButton.disabled = true;
   revealButton.disabled = true;
   finalButton.disabled = true;
+  if (restartButton) {
+    restartButton.disabled = false;
+  }
+});
+
+socket.on('quizRestarted', ({ scoreboard, message }) => {
+  lastScoreboard = scoreboard || [];
+  renderScoreboard(lastScoreboard);
+  launchButton.disabled = false;
+  revealButton.disabled = true;
+  finalButton.disabled = true;
+  if (restartButton) {
+    restartButton.disabled = false;
+  }
+  const statusText = message || 'Квиз сброшен. Всё готово к новому началу!';
+  gameStatus.textContent = statusText;
+  renderPlayers(Array.isArray(scoreboard) ? scoreboard : []);
 });
 
 socket.on('errorMessage', (message) => {

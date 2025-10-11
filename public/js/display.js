@@ -197,6 +197,11 @@ socket.on('quizFinished', ({ scoreboard, totalQuestions }) => {
   displayStatus.textContent = 'Показана финальная статистика.';
 });
 
+socket.on('quizRestarted', ({ message }) => {
+  resetToWaiting();
+  displayStatus.textContent = message || 'Ведущий начал игру заново. Ждём новый вопрос.';
+});
+
 socket.on('disconnect', () => {
   displayStatus.textContent = 'Соединение потеряно. Проверьте интернет и перезагрузите страницу.';
 });
