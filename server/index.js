@@ -226,6 +226,98 @@ io.on('connection', (socket) => {
     });
   });
 
+  socket.on('deleteQuestion', ({ code, index }) => {
+    const quiz = ensureAdmin(socket, code);
+    if (!quiz) {
+      return;
+    }
+
+    if (quiz.questionActive) {
+      socket.emit('errorMessage', 'Нельзя удалять вопрос, пока он идёт в эфире.');
+      return;
+    }
+
+    const questionIndex = Number(index);
+    if (Number.isNaN(questionIndex) || questionIndex < 0 || questionIndex >= quiz.questions.length) {
+      return;
+    }
+
+    quiz.questions.splice(questionIndex, 1);
+
+    if (quiz.questions.length === 0) {
+      quiz.currentQuestionIndex = -1;
+    } else if (quiz.currentQuestionIndex >= questionIndex) {
+      quiz.currentQuestionIndex = Math.max(-1, quiz.currentQuestionIndex - 1);
+    }
+
+    quiz.activeQuestionPayload = null;
+    quiz.lastResults = null;
+    quiz.finalResults = null;
+
+    socket.emit('adminState', {
+      code,
+      questions: sanitizeQuestions(quiz.questions),
+      players: listPlayerSummaries(quiz),
+      currentQuestionIndex: quiz.currentQuestionIndex,
+      questionActive: quiz.questionActive
+    });
+  });
+
+  socket.on('reorderQuestions', ({ code, order }) => {
+    const quiz = ensureAdmin(socket, code);
+    if (!quiz) {
+      return;
+    }
+
+    if (quiz.questionActive) {
+      socket.emit('errorMessage', 'Нельзя менять порядок во время активного вопроса.');
+      return;
+    }
+
+    if (!Array.isArray(order) || order.length !== quiz.questions.length) {
+      return;
+    }
+
+    const normalizedOrder = order.map((value) => Number(value));
+    if (normalizedOrder.some((value) => Number.isNaN(value) || value < 0 || value >= quiz.questions.length)) {
+      return;
+    }
+
+    const uniqueValues = new Set(normalizedOrder);
+    if (uniqueValues.size !== quiz.questions.length) {
+      return;
+    }
+
+    const previousQuestions = quiz.questions.slice();
+    const currentQuestion =
+      quiz.currentQuestionIndex >= 0 && quiz.currentQuestionIndex < previousQuestions.length
+        ? previousQuestions[quiz.currentQuestionIndex]
+        : null;
+
+    quiz.questions = normalizedOrder.map((value) => previousQuestions[value]);
+
+    if (currentQuestion) {
+      const newIndex = quiz.questions.findIndex((question) => question === currentQuestion);
+      quiz.currentQuestionIndex = newIndex;
+    } else if (quiz.questions.length === 0) {
+      quiz.currentQuestionIndex = -1;
+    } else if (quiz.currentQuestionIndex >= quiz.questions.length) {
+      quiz.currentQuestionIndex = quiz.questions.length - 1;
+    }
+
+    quiz.activeQuestionPayload = null;
+    quiz.lastResults = null;
+    quiz.finalResults = null;
+
+    socket.emit('adminState', {
+      code,
+      questions: sanitizeQuestions(quiz.questions),
+      players: listPlayerSummaries(quiz),
+      currentQuestionIndex: quiz.currentQuestionIndex,
+      questionActive: quiz.questionActive
+    });
+  });
+
   socket.on('launchNextQuestion', ({ code }) => {
     const quiz = ensureAdmin(socket, code);
     if (!quiz) {
