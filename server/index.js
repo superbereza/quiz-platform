@@ -21,17 +21,29 @@ const defaultQuiz = (code) => ({
   questionActive: false,
   answers: new Map(),
   players: new Map(),
+  playerRecords: new Map(),
   displaySockets: new Set(),
   activeQuestionPayload: null,
   lastResults: null,
   finalResults: null
 });
 
+const normalizePlayerName = (name) => name.trim().toLowerCase();
+
+const listPlayerSummaries = (quiz) =>
+  Array.from(quiz.playerRecords.values()).map(({ name, score }) => ({ name, score }));
+
+const buildScoreboard = (quiz) =>
+  listPlayerSummaries(quiz).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ru'));
+
 const getOrCreateQuiz = (code) => {
   if (!quizzes.has(code)) {
     quizzes.set(code, defaultQuiz(code));
   }
-  return quizzes.get(code);
+  const quiz = quizzes.get(code);
+  quiz.players = quiz.players || new Map();
+  quiz.playerRecords = quiz.playerRecords || new Map();
+  return quiz;
 };
 
 const ensureAdmin = (socket, code) => {
@@ -174,7 +186,7 @@ io.on('connection', (socket) => {
     socket.emit('adminState', {
       code: normalizedCode,
       questions: sanitizeQuestions(quiz.questions),
-      players: Array.from(quiz.players.values()).map(({ name, score }) => ({ name, score })),
+      players: listPlayerSummaries(quiz),
       currentQuestionIndex: quiz.currentQuestionIndex,
       questionActive: quiz.questionActive
     });
@@ -208,7 +220,7 @@ io.on('connection', (socket) => {
     socket.emit('adminState', {
       code,
       questions: sanitizeQuestions(quiz.questions),
-      players: Array.from(quiz.players.values()).map(({ name, score }) => ({ name, score })),
+      players: listPlayerSummaries(quiz),
       currentQuestionIndex: quiz.currentQuestionIndex,
       questionActive: quiz.questionActive
     });
@@ -238,8 +250,9 @@ io.on('connection', (socket) => {
     quiz.currentQuestionIndex += 1;
     quiz.questionActive = true;
     quiz.answers = new Map();
-    quiz.players.forEach((player) => {
+    quiz.playerRecords.forEach((player) => {
       player.answeredCurrent = false;
+      player.lastAnswerCorrect = null;
     });
 
     quiz.activeQuestionPayload = null;
@@ -288,9 +301,7 @@ io.on('connection', (socket) => {
     quiz.questionActive = false;
     quiz.activeQuestionPayload = null;
 
-    const scoreboard = Array.from(quiz.players.values())
-      .map(({ name, score }) => ({ name, score }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ru'));
+    const scoreboard = buildScoreboard(quiz);
 
     const resultPayload = {
       correctOption,
@@ -320,9 +331,7 @@ io.on('connection', (socket) => {
       return;
     }
 
-    const scoreboard = Array.from(quiz.players.values())
-      .map(({ name, score }) => ({ name, score }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ru'));
+    const scoreboard = buildScoreboard(quiz);
 
     const finalPayload = {
       scoreboard,
@@ -353,22 +362,66 @@ io.on('connection', (socket) => {
       return;
     }
 
-    quiz.players.set(socket.id, {
-      id: socket.id,
-      name: playerName,
-      score: 0,
-      answeredCurrent: false
-    });
+    const playerKey = normalizePlayerName(playerName);
+    let playerRecord = quiz.playerRecords.get(playerKey);
+
+    if (playerRecord && playerRecord.socketId && playerRecord.socketId !== socket.id) {
+      const previousSocketId = playerRecord.socketId;
+      quiz.players.delete(previousSocketId);
+      const previousSocket = io.sockets.sockets.get(previousSocketId);
+      if (previousSocket) {
+        previousSocket.emit('systemMessage', 'Ваш логин был использован с другого устройства.');
+        previousSocket.disconnect(true);
+      }
+    }
+
+    if (playerRecord) {
+      playerRecord.name = playerName;
+      playerRecord.key = playerRecord.key || playerKey;
+      playerRecord.socketId = socket.id;
+    } else {
+      playerRecord = {
+        name: playerName,
+        score: 0,
+        answeredCurrent: false,
+        lastAnswerCorrect: null,
+        socketId: socket.id,
+        key: playerKey
+      };
+      quiz.playerRecords.set(playerKey, playerRecord);
+    }
+
+    quiz.players.set(socket.id, playerRecord);
 
     socket.join(normalizedCode);
     socket.emit('joined', {
       code: normalizedCode,
       currentQuestionIndex: quiz.currentQuestionIndex,
-      questionActive: quiz.questionActive
+      questionActive: quiz.questionActive,
+      answeredCurrent: Boolean(playerRecord.answeredCurrent)
     });
 
+    if (quiz.finalResults) {
+      socket.emit('quizFinished', quiz.finalResults);
+    } else if (quiz.questionActive && quiz.activeQuestionPayload) {
+      socket.emit('questionStarted', quiz.activeQuestionPayload);
+      if (playerRecord.answeredCurrent) {
+        const existingAnswer = quiz.answers.get(playerRecord.key);
+        if (existingAnswer) {
+          socket.emit('answerAccepted', {
+            isCorrect: existingAnswer.isCorrect,
+            optionIndex: existingAnswer.optionIndex
+          });
+        } else {
+          socket.emit('answerError', 'Ответ уже отправлен.');
+        }
+      }
+    } else if (quiz.lastResults) {
+      socket.emit('questionResults', quiz.lastResults);
+    }
+
     if (quiz.adminSocketId) {
-      io.to(quiz.adminSocketId).emit('playersUpdated', Array.from(quiz.players.values()).map(({ name, score }) => ({ name, score })));
+      io.to(quiz.adminSocketId).emit('playersUpdated', listPlayerSummaries(quiz));
     }
   });
 
@@ -390,22 +443,26 @@ io.on('connection', (socket) => {
       return;
     }
 
+    player.key = player.key || normalizePlayerName(player.name);
     const question = quiz.questions[quiz.currentQuestionIndex];
-    const isCorrect = Number(optionIndex) === question.correctIndex;
+    const selectedIndex = Number(optionIndex);
+    const isCorrect = selectedIndex === question.correctIndex;
     if (isCorrect) {
       player.score += 1;
     }
 
     player.answeredCurrent = true;
-    quiz.answers.set(socket.id, {
-      playerId: socket.id,
+    player.lastAnswerCorrect = isCorrect;
+    quiz.answers.set(player.key, {
+      playerId: player.key,
       name: player.name,
-      optionIndex: Number(optionIndex),
+      optionIndex: selectedIndex,
       isCorrect
     });
 
     socket.emit('answerAccepted', {
-      isCorrect
+      isCorrect,
+      optionIndex: selectedIndex
     });
   });
 
@@ -416,10 +473,14 @@ io.on('connection', (socket) => {
         io.to(code).emit('systemMessage', 'Ведущий отключился. Подождите, пока он вернётся.');
       }
 
-      if (quiz.players.has(socket.id)) {
+      const playerRecord = quiz.players.get(socket.id);
+      if (playerRecord) {
         quiz.players.delete(socket.id);
+        if (playerRecord.socketId === socket.id) {
+          playerRecord.socketId = null;
+        }
         if (quiz.adminSocketId) {
-          io.to(quiz.adminSocketId).emit('playersUpdated', Array.from(quiz.players.values()).map(({ name, score }) => ({ name, score })));
+          io.to(quiz.adminSocketId).emit('playersUpdated', listPlayerSummaries(quiz));
         }
       }
 

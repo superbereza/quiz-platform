@@ -20,6 +20,7 @@ const systemMessages = document.getElementById('system-messages');
 let quizCode = '';
 let playerName = '';
 let hasAnsweredCurrent = false;
+let pendingAnsweredFlag = false;
 
 const params = new URLSearchParams(window.location.search);
 if (params.get('quiz')) {
@@ -65,14 +66,15 @@ joinForm.addEventListener('submit', (event) => {
 const resetQuestionUI = () => {
   optionsContainer.innerHTML = '';
   answerStatus.textContent = '';
-  hasAnsweredCurrent = false;
 };
 
-socket.on('joined', ({ code }) => {
+socket.on('joined', ({ code, answeredCurrent }) => {
   quizCode = code;
   joinPanel.hidden = true;
   waitingPanel.hidden = false;
   joinStatus.textContent = '';
+  pendingAnsweredFlag = Boolean(answeredCurrent);
+  hasAnsweredCurrent = pendingAnsweredFlag;
   systemMessages.textContent = 'Ждём новый вопрос от ведущего. Следите за экраном трансляции!';
 });
 
@@ -85,6 +87,7 @@ socket.on('questionStarted', ({ index, total, options }) => {
   resultsPanel.hidden = true;
   questionPanel.hidden = false;
   resetQuestionUI();
+  hasAnsweredCurrent = pendingAnsweredFlag;
   questionCounter.textContent = `Вопрос ${index} из ${total}`;
   questionInstructions.textContent = 'Смотрите на общий экран и выберите подходящий номер.';
 
@@ -102,6 +105,12 @@ socket.on('questionStarted', ({ index, total, options }) => {
     });
     optionsContainer.appendChild(button);
   });
+
+  if (hasAnsweredCurrent) {
+    disableOptions();
+    answerStatus.textContent = 'Ответ уже отправлен. Ждём остальных игроков...';
+  }
+  pendingAnsweredFlag = false;
 });
 
 const disableOptions = () => {
@@ -110,7 +119,19 @@ const disableOptions = () => {
   });
 };
 
-socket.on('answerAccepted', ({ isCorrect }) => {
+const highlightOption = (optionIndex) => {
+  const buttons = optionsContainer.querySelectorAll('button');
+  if (typeof optionIndex === 'number' && buttons[optionIndex]) {
+    buttons[optionIndex].classList.add('selected');
+  }
+};
+
+socket.on('answerAccepted', ({ isCorrect, optionIndex }) => {
+  hasAnsweredCurrent = true;
+  if (typeof optionIndex === 'number') {
+    highlightOption(optionIndex);
+  }
+  disableOptions();
   answerStatus.textContent = isCorrect
     ? 'Верно! Ждём остальных игроков...'
     : 'Ответ принят. Посмотрим, правильный ли он!';
@@ -118,9 +139,15 @@ socket.on('answerAccepted', ({ isCorrect }) => {
 
 socket.on('answerError', (message) => {
   answerStatus.textContent = message;
+  if (message && message.toLowerCase().includes('уже отправлен')) {
+    hasAnsweredCurrent = true;
+    disableOptions();
+  }
 });
 
 socket.on('questionResults', ({ correctOption, correctPlayersCount, scoreboard, isLastQuestion }) => {
+  hasAnsweredCurrent = false;
+  pendingAnsweredFlag = false;
   questionPanel.hidden = true;
   resultsPanel.hidden = false;
   resultsSummary.textContent = `Правильный вариант: ${correctOption + 1}. Правильных ответов: ${correctPlayersCount}.`;
@@ -131,6 +158,8 @@ socket.on('questionResults', ({ correctOption, correctPlayersCount, scoreboard, 
 });
 
 socket.on('quizFinished', ({ scoreboard, totalQuestions }) => {
+  hasAnsweredCurrent = false;
+  pendingAnsweredFlag = false;
   waitingPanel.hidden = true;
   questionPanel.hidden = true;
   resultsPanel.hidden = false;
