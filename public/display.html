@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Retro Quiz Display 2004</title>
+    <link rel="stylesheet" href="css/retro.css" />
+    <script defer src="/socket.io/socket.io.js"></script>
+    <script defer src="js/display.js"></script>
+  </head>
+  <body class="star-bg">
+    <div class="wrapper wide">
+      <header class="header">
+        <h1>🎉 Экран трансляции 2004 🎉</h1>
+        <p>Выводите вопросы и результаты квиза на большой экран.</p>
+      </header>
+      <main class="display-main">
+        <section class="panel" id="connect-panel">
+          <h2>Подключение</h2>
+          <p>
+            Введите код квиза, который использует ведущий. Экран автоматически покажет текущий вопрос или результаты.
+          </p>
+          <form id="display-form" class="inline-form">
+            <label for="display-code">Код квиза</label>
+            <input id="display-code" name="display-code" maxlength="12" autocomplete="off" required />
+            <button type="submit" class="button secondary">Показать квиз</button>
+          </form>
+          <p class="status-line" id="display-status"></p>
+        </section>
+
+        <section class="panel stage" id="waiting-panel" hidden>
+          <h2>Ждём старт</h2>
+          <p>Как только ведущий запустит вопрос, он появится здесь в стиле 2004 года ✨</p>
+        </section>
+
+        <section class="panel stage" id="question-panel" hidden>
+          <div class="question-head">
+            <span class="badge" id="question-counter"></span>
+            <h2 id="question-title">Вопрос</h2>
+          </div>
+          <p class="question-text" id="question-text"></p>
+          <div class="image-wrapper" id="question-image-wrapper" hidden>
+            <img id="question-image" alt="Иллюстрация вопроса" />
+          </div>
+          <ol class="options-list" id="question-options"></ol>
+          <p class="hint" id="question-hint">Игроки отвечают со своих устройств.</p>
+        </section>
+
+        <section class="panel stage" id="results-panel" hidden>
+          <div class="question-head">
+            <span class="badge" id="results-counter"></span>
+            <h2>Результаты вопроса</h2>
+          </div>
+          <p class="question-text" id="results-question"></p>
+          <div class="image-wrapper" id="results-image-wrapper" hidden>
+            <img id="results-image" alt="Иллюстрация вопроса" />
+          </div>
+          <ul class="results-breakdown" id="results-breakdown"></ul>
+          <p class="hint" id="results-summary"></p>
+          <table class="scoreboard jumbo" id="display-scoreboard"></table>
+          <p class="hint" id="next-hint"></p>
+        </section>
+
+        <section class="panel stage" id="final-panel" hidden>
+          <h2>Финальная статистика</h2>
+          <p class="question-text" id="final-title"></p>
+          <table class="scoreboard jumbo" id="final-scoreboard"></table>
+          <p class="hint" id="final-hint"></p>
+        </section>
+      </main>
+      <footer class="footer">
+        <p>Пусть ваш LAN-вечер 2004 года будет легендарным!</p>
+      </footer>
+    </div>
+  </body>
+</html>
