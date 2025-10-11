@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 2,
+  "templateId": "node/18",
+  "dockerfilePath": "",
+  "dockerrunFilePath": "",
+  "buildCommand": "npm install",
+  "runCommand": "npm start"
+}
