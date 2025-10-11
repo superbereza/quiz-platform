@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Панель ведущего — Retro Quiz</title>
+    <link rel="stylesheet" href="css/retro.css" />
+  </head>
+  <body class="star-bg">
+    <div class="wrapper narrow">
+      <header class="header">
+        <h1>Панель ведущего</h1>
+        <p>Создавайте легендарные викторины как в 2004-м.</p>
+      </header>
+      <main class="content admin-grid">
+        <section class="panel" id="connect-panel">
+          <h2>1. Код квиза</h2>
+          <p>Придумайте короткий код и поделитесь им с друзьями.</p>
+          <ol class="hint-list">
+            <li>Введите слово или набор букв, например <strong>RETRO</strong>.</li>
+            <li>Нажмите «Подключиться» — если кода ещё не было, мы создадим квиз автоматически.</li>
+            <li>Добавьте вопросы и ждите, пока игроки подключатся на странице игры.</li>
+          </ol>
+          <form id="admin-connect">
+            <label>Код квиза:<br /><input type="text" id="quiz-code" maxlength="8" required /></label>
+            <button type="submit" class="button">Подключиться</button>
+          </form>
+          <p class="hint">Совет: используйте что-то вроде <strong>RETRO</strong> или <strong>PARTY</strong>.</p>
+          <p id="connect-status" class="status-line"></p>
+        </section>
+
+        <section class="panel" id="question-panel" hidden>
+          <h2>2. Вопрос</h2>
+          <form id="question-form">
+            <label>Текст вопроса:<br /><textarea id="question-text" rows="3" required></textarea></label>
+            <div class="upload-controls">
+              <label>Картинка (JPG или PNG до 5 МБ):<br /><input type="file" id="question-image-upload" accept=".jpg,.jpeg,.png,image/jpeg,image/png" /></label>
+              <p class="hint">После загрузки ссылка заполнится автоматически и картинка появится на общем экране.</p>
+              <label>Ссылка на картинку (опционально):<br /><input type="url" id="question-image" placeholder="http:// или оставьте пустым" /></label>
+              <p id="image-upload-status" class="upload-status"></p>
+            </div>
+            <div class="options-grid">
+              <label>Вариант 1<br /><input type="text" class="option-input" data-index="0" required /></label>
+              <label>Вариант 2<br /><input type="text" class="option-input" data-index="1" required /></label>
+              <label>Вариант 3<br /><input type="text" class="option-input" data-index="2" required /></label>
+              <label>Вариант 4<br /><input type="text" class="option-input" data-index="3" required /></label>
+            </div>
+            <label>Правильный вариант:<br />
+              <select id="correct-index">
+                <option value="0">1</option>
+                <option value="1">2</option>
+                <option value="2">3</option>
+                <option value="3">4</option>
+              </select>
+            </label>
+            <button type="submit" class="button">Добавить вопрос</button>
+          </form>
+          <div class="question-list">
+            <h3>Список вопросов</h3>
+            <ol id="questions"></ol>
+          </div>
+        </section>
+
+        <section class="panel" id="control-panel" hidden>
+          <h2>3. Управление игрой</h2>
+          <p id="game-status" class="status-line"></p>
+          <button id="launch-question" class="button">Запустить следующий вопрос</button>
+          <button id="reveal-results" class="button secondary" disabled>Показать результаты</button>
+          <button id="final-results" class="button tertiary" disabled>Финальная статистика</button>
+          <div class="mini-panel">
+            <h3>Игроки онлайн</h3>
+            <ul id="players"></ul>
+          </div>
+          <div class="mini-panel">
+            <h3>Текущий рейтинг</h3>
+            <table id="scoreboard" class="scoreboard"></table>
+          </div>
+        </section>
+      </main>
+      <footer class="footer">
+        <p>Панель ведущего Retro Quiz. Никаких лишних вкладок — только олдскул.</p>
+      </footer>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/admin.js"></script>
+  </body>
+</html>
