@@ -11,8 +11,46 @@
         <h1>Панель ведущего</h1>
         <p>Создавайте легендарные викторины как в 2004-м.</p>
       </header>
-      <main class="content admin-grid">
-        <section class="panel" id="connect-panel">
+      <main class="admin-layout">
+        <nav class="admin-tabs" role="tablist" aria-label="Режимы панели ведущего">
+          <button
+            type="button"
+            class="tab-button"
+            id="tab-connect"
+            role="tab"
+            aria-selected="true"
+            aria-controls="connect-panel"
+            data-tab-target="connect-panel"
+          >
+            Подключиться
+          </button>
+          <button
+            type="button"
+            class="tab-button"
+            id="tab-questions"
+            role="tab"
+            aria-selected="false"
+            aria-controls="question-panel"
+            data-tab-target="question-panel"
+            disabled
+          >
+            Вопросы
+          </button>
+          <button
+            type="button"
+            class="tab-button"
+            id="tab-control"
+            role="tab"
+            aria-selected="false"
+            aria-controls="control-panel"
+            data-tab-target="control-panel"
+            disabled
+          >
+            Управление
+          </button>
+        </nav>
+
+        <section class="panel tab-panel" id="connect-panel" role="tabpanel" aria-labelledby="tab-connect">
           <h2>1. Код квиза</h2>
           <p>Придумайте короткий код и поделитесь им с друзьями.</p>
           <ol class="hint-list">
@@ -28,7 +66,13 @@
           <p id="connect-status" class="status-line"></p>
         </section>
 
-        <section class="panel" id="question-panel" hidden>
+        <section
+          class="panel tab-panel"
+          id="question-panel"
+          role="tabpanel"
+          aria-labelledby="tab-questions"
+          hidden
+        >
           <h2>2. Вопрос</h2>
           <form id="question-form">
             <label>Текст вопроса:<br /><textarea id="question-text" rows="3" required></textarea></label>
@@ -60,7 +104,13 @@
           </div>
         </section>
 
-        <section class="panel" id="control-panel" hidden>
+        <section
+          class="panel tab-panel"
+          id="control-panel"
+          role="tabpanel"
+          aria-labelledby="tab-control"
+          hidden
+        >
           <h2>3. Управление игрой</h2>
           <p id="game-status" class="status-line"></p>
           <button id="launch-question" class="button">Запустить следующий вопрос</button>

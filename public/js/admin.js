@@ -3,8 +3,8 @@ const socket = io();
 const connectForm = document.getElementById('admin-connect');
 const quizCodeInput = document.getElementById('quiz-code');
 const connectStatus = document.getElementById('connect-status');
-const questionPanel = document.getElementById('question-panel');
-const controlPanel = document.getElementById('control-panel');
+const tabButtons = Array.from(document.querySelectorAll('[data-tab-target]'));
+const tabPanels = Array.from(document.querySelectorAll('.tab-panel'));
 const questionForm = document.getElementById('question-form');
 const imageUrlInput = document.getElementById('question-image');
 const imageUploadInput = document.getElementById('question-image-upload');
@@ -23,6 +23,49 @@ let lastScoreboard = [];
 let uploadingImage = false;
 let dragStartOrder = [];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const getTabButton = (panelId) =>
+  tabButtons.find((button) => button.dataset.tabTarget === panelId);
+
+const setActiveTab = (panelId) => {
+  tabButtons.forEach((button) => {
+    const isActive = button.dataset.tabTarget === panelId;
+    button.setAttribute('aria-selected', String(isActive));
+    button.classList.toggle('tab-button--active', isActive);
+  });
+
+  tabPanels.forEach((panel) => {
+    panel.hidden = panel.id !== panelId;
+  });
+};
+
+const setTabAvailability = (panelId, isEnabled) => {
+  const button = getTabButton(panelId);
+  if (!button) {
+    return;
+  }
+  button.disabled = !isEnabled;
+  if (!isEnabled && button.getAttribute('aria-selected') === 'true') {
+    setActiveTab('connect-panel');
+  }
+};
+
+const enableTab = (panelId) => setTabAvailability(panelId, true);
+const disableTab = (panelId) => setTabAvailability(panelId, false);
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    if (button.disabled) {
+      return;
+    }
+    const target = button.dataset.tabTarget;
+    if (target) {
+      setActiveTab(target);
+    }
+  });
+});
+
+setActiveTab('connect-panel');
 
 const setUploadStatus = (message = '', variant = 'idle') => {
   if (!imageUploadStatus) return;
@@ -359,8 +402,9 @@ if (questionsList) {
 socket.on('adminState', ({ code, questions, players, currentQuestionIndex, questionActive }) => {
   quizCode = code;
   connectStatus.textContent = `Вы управляете квизом ${code}. Добавьте вопросы и зовите игроков!`;
-  questionPanel.hidden = false;
-  controlPanel.hidden = false;
+  enableTab('question-panel');
+  enableTab('control-panel');
+  setActiveTab('question-panel');
   renderQuestions(questions);
   renderPlayers(players);
   if (!questionActive) {
@@ -437,4 +481,8 @@ socket.on('errorMessage', (message) => {
 
 socket.on('disconnect', () => {
   connectStatus.textContent = 'Связь потеряна. Проверьте интернет и обновите страницу.';
+  quizCode = '';
+  disableTab('question-panel');
+  disableTab('control-panel');
+  setActiveTab('connect-panel');
 });
