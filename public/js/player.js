@@ -22,6 +22,45 @@ let playerName = '';
 let hasAnsweredCurrent = false;
 let pendingAnsweredFlag = false;
 
+const PLAYER_STORAGE_KEY = 'quizPlayerInfo';
+
+const loadStoredPlayer = () => {
+  try {
+    const raw = localStorage.getItem(PLAYER_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== 'object') return null;
+    const { code, name } = data;
+    if (typeof code !== 'string' || typeof name !== 'string') return null;
+    if (!code.trim() || !name.trim()) return null;
+    return { code: code.trim().toUpperCase(), name: name.trim() };
+  } catch (error) {
+    console.warn('Не удалось прочитать данные участника из localStorage', error);
+    return null;
+  }
+};
+
+const storePlayerInfo = (code, name) => {
+  try {
+    localStorage.setItem(
+      PLAYER_STORAGE_KEY,
+      JSON.stringify({ code: code.trim().toUpperCase(), name: name.trim() }),
+    );
+  } catch (error) {
+    console.warn('Не удалось сохранить данные участника в localStorage', error);
+  }
+};
+
+const clearStoredPlayerInfo = () => {
+  try {
+    localStorage.removeItem(PLAYER_STORAGE_KEY);
+  } catch (error) {
+    console.warn('Не удалось удалить данные участника из localStorage', error);
+  }
+};
+
+const storedPlayer = loadStoredPlayer();
+
 const params = new URLSearchParams(window.location.search);
 if (params.get('quiz')) {
   const code = params.get('quiz').toUpperCase();
@@ -29,6 +68,43 @@ if (params.get('quiz')) {
   joinCodeInput.readOnly = true;
   document.getElementById('code-label').style.display = 'none';
   quizCode = code;
+}
+
+if (storedPlayer) {
+  if (!quizCode && storedPlayer.code) {
+    quizCode = storedPlayer.code;
+    joinCodeInput.value = storedPlayer.code;
+  } else if (storedPlayer.code === quizCode) {
+    joinCodeInput.value = quizCode;
+  }
+
+  if (!playerName && storedPlayer.name) {
+    playerName = storedPlayer.name;
+  }
+
+  if (!playerNameInput.value && storedPlayer.name) {
+    playerNameInput.value = storedPlayer.name;
+  }
+}
+
+const attemptAutoJoin = () => {
+  if (
+    !storedPlayer ||
+    !storedPlayer.code ||
+    !storedPlayer.name ||
+    storedPlayer.code !== quizCode
+  ) {
+    return;
+  }
+
+  playerName = storedPlayer.name;
+  playerNameInput.value = storedPlayer.name;
+  joinStatus.textContent = 'Восстанавливаем подключение...';
+  socket.emit('joinQuiz', { code: quizCode, name: playerName });
+};
+
+if (quizCode && storedPlayer) {
+  attemptAutoJoin();
 }
 
 const renderScoreboard = (rows) => {
@@ -73,6 +149,7 @@ socket.on('joined', ({ code, answeredCurrent }) => {
   joinPanel.hidden = true;
   waitingPanel.hidden = false;
   joinStatus.textContent = '';
+  storePlayerInfo(quizCode, playerName);
   pendingAnsweredFlag = Boolean(answeredCurrent);
   hasAnsweredCurrent = pendingAnsweredFlag;
   systemMessages.textContent = 'Ждём новый вопрос от ведущего. Следите за экраном трансляции!';
@@ -80,6 +157,7 @@ socket.on('joined', ({ code, answeredCurrent }) => {
 
 socket.on('joinError', (message) => {
   joinStatus.textContent = message;
+  clearStoredPlayerInfo();
 });
 
 socket.on('questionStarted', ({ index, total, options }) => {
