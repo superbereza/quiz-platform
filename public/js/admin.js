@@ -21,6 +21,7 @@ const gameStatus = document.getElementById('game-status');
 let quizCode = '';
 let lastScoreboard = [];
 let uploadingImage = false;
+let dragStartOrder = [];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const setUploadStatus = (message = '', variant = 'idle') => {
@@ -92,25 +93,57 @@ const renderQuestions = (questions) => {
   }
 
   const safeQuestions = Array.isArray(questions) ? questions : [];
+  dragStartOrder = [];
   questionsList.innerHTML = '';
 
-  safeQuestions.forEach((question) => {
-    const li = document.createElement('li');
+  safeQuestions.forEach((question, position) => {
+    const item = document.createElement('li');
+    item.className = 'question-item';
+    item.dataset.index = String(question.index);
+    item.draggable = safeQuestions.length > 1;
 
-    const promptEl = document.createElement('strong');
-    promptEl.textContent = question.prompt || '';
-    li.appendChild(promptEl);
-
-    if (question.imageUrl) {
-      const br = document.createElement('br');
-      const hint = document.createElement('span');
-      hint.className = 'hint';
-      hint.textContent = `🖼 ${question.imageUrl}`;
-      li.appendChild(br);
-      li.appendChild(hint);
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.title = 'Перетащите, чтобы изменить порядок';
+    if (safeQuestions.length <= 1) {
+      dragHandle.classList.add('drag-handle--disabled');
     }
 
-    questionsList.appendChild(li);
+    const numberBadge = document.createElement('span');
+    numberBadge.className = 'badge question-number';
+    numberBadge.textContent = String(position + 1);
+
+    const content = document.createElement('div');
+    content.className = 'question-item__content';
+
+    const promptEl = document.createElement('strong');
+    promptEl.className = 'question-item__prompt';
+    promptEl.textContent = question.prompt || '';
+    content.appendChild(promptEl);
+
+    if (question.imageUrl) {
+      const imageHint = document.createElement('div');
+      imageHint.className = 'question-item__meta';
+      imageHint.textContent = `🖼 ${question.imageUrl}`;
+      content.appendChild(imageHint);
+    }
+
+    const controls = document.createElement('div');
+    controls.className = 'question-item__controls';
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'question-remove';
+    deleteButton.setAttribute('data-action', 'delete');
+    deleteButton.textContent = 'Удалить';
+    controls.appendChild(deleteButton);
+
+    item.appendChild(dragHandle);
+    item.appendChild(numberBadge);
+    item.appendChild(content);
+    item.appendChild(controls);
+
+    questionsList.appendChild(item);
   });
 };
 
@@ -207,6 +240,120 @@ if (restartButton) {
     }
     socket.emit('restartQuiz', { code: quizCode });
   });
+}
+
+if (questionsList) {
+  questionsList.addEventListener('click', (event) => {
+    const target = event.target.closest('.question-remove');
+    if (!target) {
+      return;
+    }
+
+    if (!quizCode) {
+      connectStatus.textContent = 'Сначала подключитесь к квизу.';
+      return;
+    }
+
+    const item = target.closest('.question-item');
+    if (!item) {
+      return;
+    }
+
+    const questionIndex = Number(item.dataset.index);
+    if (Number.isNaN(questionIndex)) {
+      return;
+    }
+
+    const confirmed = window.confirm('Удалить этот вопрос из списка?');
+    if (!confirmed) {
+      return;
+    }
+
+    socket.emit('deleteQuestion', { code: quizCode, index: questionIndex });
+  });
+
+  questionsList.addEventListener('dragstart', (event) => {
+    const item = event.target.closest('.question-item');
+    if (!item || !item.draggable) {
+      return;
+    }
+
+    dragStartOrder = Array.from(questionsList.querySelectorAll('.question-item')).map((element) =>
+      Number(element.dataset.index)
+    );
+    item.classList.add('dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', item.dataset.index);
+  });
+
+  questionsList.addEventListener('dragover', (event) => {
+    event.preventDefault();
+
+    const dragging = questionsList.querySelector('.dragging');
+    if (!dragging) {
+      return;
+    }
+
+    const target = event.target.closest('.question-item');
+    if (!target || target === dragging) {
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const shouldInsertAfter = event.clientY - rect.top > rect.height / 2;
+
+    if (shouldInsertAfter) {
+      questionsList.insertBefore(dragging, target.nextSibling);
+    } else {
+      questionsList.insertBefore(dragging, target);
+    }
+  });
+
+  const finalizeDrag = () => {
+    const dragging = questionsList.querySelector('.dragging');
+    if (dragging) {
+      dragging.classList.remove('dragging');
+    }
+  };
+
+  questionsList.addEventListener('drop', (event) => {
+    event.preventDefault();
+    if (!quizCode) {
+      finalizeDrag();
+      return;
+    }
+
+    const newOrder = Array.from(questionsList.querySelectorAll('.question-item')).map((element) =>
+      Number(element.dataset.index)
+    );
+
+    finalizeDrag();
+
+    if (newOrder.length <= 1) {
+      return;
+    }
+
+    const hasAllItems =
+      newOrder.length === dragStartOrder.length &&
+      newOrder.every((value) => dragStartOrder.includes(value));
+
+    if (!hasAllItems) {
+      dragStartOrder = [];
+      return;
+    }
+
+    const orderChanged = newOrder.some((value, index) => value !== dragStartOrder[index]);
+
+    dragStartOrder = [];
+
+    if (!orderChanged) {
+      return;
+    }
+
+    socket.emit('reorderQuestions', { code: quizCode, order: newOrder });
+  });
+
+  questionsList.addEventListener('dragend', finalizeDrag);
 }
 
 socket.on('adminState', ({ code, questions, players, currentQuestionIndex, questionActive }) => {
