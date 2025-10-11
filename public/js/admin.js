@@ -105,7 +105,8 @@ const renderQuestions = (questions) => {
       const hint = document.createElement('span');
       hint.className = 'hint';
       hint.textContent = `🖼 ${question.imageUrl}`;
-      li.append(br, hint);
+      li.appendChild(br);
+      li.appendChild(hint);
     }
 
     questionsList.appendChild(li);
