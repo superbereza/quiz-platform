@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Игровая комната — Retro Quiz</title>
+    <link rel="stylesheet" href="css/retro.css" />
+  </head>
+  <body class="star-bg">
+    <div class="wrapper narrow">
+      <header class="header">
+        <h1>Игровая комната</h1>
+        <p>Подключайтесь и отвечайте быстрее всех!</p>
+      </header>
+      <main class="content">
+        <section class="panel" id="join-panel">
+          <h2>Вход</h2>
+          <form id="join-form">
+            <label id="code-label">Код квиза:<br /><input type="text" id="join-code" maxlength="8" required /></label>
+            <label>Ваш логин:<br /><input type="text" id="player-name" maxlength="24" required /></label>
+            <button type="submit" class="button">Войти</button>
+          </form>
+          <p id="join-status" class="status-line"></p>
+        </section>
+
+        <section class="panel" id="waiting-panel" hidden>
+          <h2>Ждём старт</h2>
+          <p>Как только ведущий запустит вопрос, он появится здесь.</p>
+          <p class="hint">Подготовьте пальцы — будет жарко!</p>
+          <p id="system-messages" class="status-line"></p>
+        </section>
+
+        <section class="panel" id="question-panel" hidden>
+          <h2 id="question-counter"></h2>
+          <p id="question-text" class="question-text"></p>
+          <div id="question-image-wrapper" class="image-wrapper" hidden>
+            <img id="question-image" alt="Изображение к вопросу" />
+          </div>
+          <div id="options" class="options-grid"></div>
+          <p id="answer-status" class="status-line"></p>
+        </section>
+
+        <section class="panel" id="results-panel" hidden>
+          <h2>Результаты</h2>
+          <p id="results-summary"></p>
+          <table id="results-table" class="scoreboard"></table>
+          <p id="final-message" class="hint"></p>
+        </section>
+      </main>
+      <footer class="footer">
+        <p>Retro Quiz 2005: никаких приложений, только браузер и дружеский хохот.</p>
+      </footer>
+    </div>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js" integrity="sha384-tMiEJeZVrDCTnhgypKekJy5o+1OtSWT8gJtIhXCTITVEWilQoNqT9XyM54f9Xp8a" crossorigin="anonymous"></script>
+    <script src="js/player.js"></script>
+  </body>
+</html>
