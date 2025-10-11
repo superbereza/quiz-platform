@@ -86,10 +86,29 @@ connectStatus.textContent =
   'Введите короткий код (например RETRO) и нажмите «Подключиться». Если такого кода ещё нет — квиз создастся автоматически.';
 
 const renderQuestions = (questions) => {
+  if (!questionsList) {
+    return;
+  }
+
+  const safeQuestions = Array.isArray(questions) ? questions : [];
   questionsList.innerHTML = '';
-  questions.forEach((question) => {
+
+  safeQuestions.forEach((question) => {
     const li = document.createElement('li');
-    li.innerHTML = `<strong>${question.prompt}</strong>${question.imageUrl ? `<br /><span class="hint">🖼 ${question.imageUrl}</span>` : ''}`;
+
+    const promptEl = document.createElement('strong');
+    promptEl.textContent = question.prompt || '';
+    li.appendChild(promptEl);
+
+    if (question.imageUrl) {
+      const br = document.createElement('br');
+      const hint = document.createElement('span');
+      hint.className = 'hint';
+      hint.textContent = `🖼 ${question.imageUrl}`;
+      li.appendChild(br);
+      li.appendChild(hint);
+    }
+
     questionsList.appendChild(li);
   });
 };
