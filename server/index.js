@@ -37,7 +37,20 @@ const listPlayerSummaries = (quiz) =>
 const buildScoreboard = (quiz) =>
   listPlayerSummaries(quiz).sort((a, b) => b.score - a.score || a.name.localeCompare(b.name, 'ru'));
 
-const persistentDir = path.join(__dirname, '..', 'data');
+const resolvePersistentDir = () => {
+  if (process.env.QUIZ_DATA_DIR) {
+    return process.env.QUIZ_DATA_DIR;
+  }
+
+  const caproverDataPath = '/data';
+  if (fs.existsSync(caproverDataPath)) {
+    return caproverDataPath;
+  }
+
+  return path.join(__dirname, '..', 'data');
+};
+
+const persistentDir = resolvePersistentDir();
 const quizzesFilePath = path.join(persistentDir, 'quizzes.json');
 
 fs.mkdirSync(persistentDir, { recursive: true });
