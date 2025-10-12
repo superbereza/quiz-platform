@@ -14,7 +14,7 @@
           <a class="button secondary" href="/quizzes.html">Посмотреть сохранённые квизы</a>
         </p>
       </header>
-      <main class="content admin-grid">
+      <main class="content admin-layout">
         <section class="panel" id="connect-panel">
           <h2>1. Код квиза</h2>
           <p>Придумайте короткий код и поделитесь им с друзьями.</p>
@@ -30,36 +30,37 @@
           <p class="hint">Совет: используйте что-то вроде <strong>RETRO</strong> или <strong>PARTY</strong>.</p>
           <p id="connect-status" class="status-line"></p>
         </section>
-
         <section class="panel" id="question-panel" hidden>
-          <h2>2. Вопрос</h2>
-          <form id="question-form">
-            <label>Текст вопроса:<br /><textarea id="question-text" rows="3" required></textarea></label>
-            <div class="upload-controls">
-              <label>Картинка (JPG или PNG до 5 МБ):<br /><input type="file" id="question-image-upload" accept=".jpg,.jpeg,.png,image/jpeg,image/png" /></label>
-              <p class="hint">После загрузки ссылка заполнится автоматически и картинка появится на общем экране.</p>
-              <label>Ссылка на картинку (опционально):<br /><input type="text" id="question-image" inputmode="url" placeholder="http://… или оставьте пустым — загрузка подставит /uploads/..." /></label>
-              <p id="image-upload-status" class="upload-status"></p>
-            </div>
-            <div class="options-grid">
-              <label>Вариант 1<br /><input type="text" class="option-input" data-index="0" required /></label>
-              <label>Вариант 2<br /><input type="text" class="option-input" data-index="1" required /></label>
-              <label>Вариант 3<br /><input type="text" class="option-input" data-index="2" required /></label>
-              <label>Вариант 4<br /><input type="text" class="option-input" data-index="3" required /></label>
-            </div>
-            <label>Правильный вариант:<br />
-              <select id="correct-index">
-                <option value="0">1</option>
-                <option value="1">2</option>
-                <option value="2">3</option>
-                <option value="3">4</option>
-              </select>
-            </label>
-            <button type="submit" class="button">Добавить вопрос</button>
-          </form>
-          <div class="question-list">
-            <h3>Список вопросов</h3>
-            <ol id="questions"></ol>
+          <h2>2. Вопросы и ответы</h2>
+          <div class="question-panel-layout">
+            <form id="question-form">
+              <label>Текст вопроса:<br /><textarea id="question-text" rows="3" required></textarea></label>
+              <div class="upload-controls">
+                <label>Картинка (JPG или PNG до 5 МБ):<br /><input type="file" id="question-image-upload" accept=".jpg,.jpeg,.png,image/jpeg,image/png" /></label>
+                <p class="hint">После загрузки ссылка заполнится автоматически и картинка появится на общем экране.</p>
+                <label>Ссылка на картинку (опционально):<br /><input type="text" id="question-image" inputmode="url" placeholder="http://… или оставьте пустым — загрузка подставит /uploads/..." /></label>
+                <p id="image-upload-status" class="upload-status"></p>
+              </div>
+              <div class="options-grid">
+                <label>Вариант 1<br /><input type="text" class="option-input" data-index="0" required /></label>
+                <label>Вариант 2<br /><input type="text" class="option-input" data-index="1" required /></label>
+                <label>Вариант 3<br /><input type="text" class="option-input" data-index="2" required /></label>
+                <label>Вариант 4<br /><input type="text" class="option-input" data-index="3" required /></label>
+              </div>
+              <label>Правильный вариант:<br />
+                <select id="correct-index">
+                  <option value="0">1</option>
+                  <option value="1">2</option>
+                  <option value="2">3</option>
+                  <option value="3">4</option>
+                </select>
+              </label>
+              <button type="submit" class="button">Добавить вопрос</button>
+            </form>
+            <aside class="question-list">
+              <h3>Список вопросов</h3>
+              <ol id="questions"></ol>
+            </aside>
           </div>
         </section>
 

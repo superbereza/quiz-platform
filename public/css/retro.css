@@ -46,10 +46,51 @@ body {
   justify-content: center;
 }
 
-.admin-grid {
+.admin-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-areas:
+    'connect connect'
+    'questions control';
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr);
   gap: 24px;
+  width: 100%;
+}
+
+#connect-panel {
+  grid-area: connect;
+}
+
+#question-panel {
+  grid-area: questions;
+}
+
+#control-panel {
+  grid-area: control;
+}
+
+.question-panel-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.85fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.question-panel-layout form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.question-panel-layout .question-list {
+  margin-top: 0;
+  padding: 16px;
+  border: 2px dashed rgba(255, 191, 0, 0.35);
+  border-radius: 12px;
+  background: rgba(255, 191, 0, 0.05);
+}
+
+.question-panel-layout .question-list h3 {
+  margin-top: 0;
 }
 
 .panel {
@@ -203,6 +244,30 @@ textarea {
 
 .question-list {
   margin-top: 16px;
+}
+
+@media (max-width: 1100px) {
+  .admin-layout {
+    grid-template-areas:
+      'connect'
+      'questions'
+      'control';
+    grid-template-columns: 1fr;
+  }
+
+  .question-panel-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .question-panel-layout .question-list {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 680px) {
+  .question-panel-layout form {
+    gap: 10px;
+  }
 }
 
 #questions {
