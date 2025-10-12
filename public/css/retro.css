@@ -46,10 +46,51 @@ body {
   justify-content: center;
 }
 
-.admin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+.admin-layout {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.tab-button {
+  appearance: none;
+  border: 2px solid #ffbf00;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffe680;
+  padding: 10px 18px;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow: 0 3px 0 rgba(255, 191, 0, 0.5);
+}
+
+.tab-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.tab-button[aria-selected='true'] {
+  background: linear-gradient(180deg, rgba(255, 95, 109, 0.85), rgba(255, 195, 113, 0.85));
+  color: #1f0035;
+  box-shadow: 0 0 12px rgba(255, 191, 0, 0.6);
+}
+
+.tab-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tab-panel {
+  min-height: 320px;
 }
 
 .panel {
