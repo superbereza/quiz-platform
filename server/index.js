@@ -15,6 +15,7 @@ const quizzes = new Map();
 
 const defaultQuiz = (code) => ({
   code,
+  createdAt: new Date().toISOString(),
   adminSocketId: null,
   questions: [],
   currentQuestionIndex: -1,
@@ -43,6 +44,7 @@ fs.mkdirSync(persistentDir, { recursive: true });
 
 const serializeQuiz = (quiz) => ({
   code: quiz.code,
+  createdAt: quiz.createdAt,
   questions: quiz.questions,
   currentQuestionIndex: quiz.currentQuestionIndex,
   playerRecords: Array.from(quiz.playerRecords.entries()).map(([key, record]) => ({
@@ -60,6 +62,7 @@ const deserializeQuiz = (rawQuiz) => {
   }
 
   const quiz = defaultQuiz(rawQuiz.code);
+  quiz.createdAt = rawQuiz.createdAt || quiz.createdAt;
   quiz.questions = Array.isArray(rawQuiz.questions) ? rawQuiz.questions : [];
   if (typeof rawQuiz.currentQuestionIndex === 'number') {
     const maxIndex = quiz.questions.length - 1;
@@ -227,8 +230,27 @@ const upload = multer({
 
 const singleImageUpload = upload.single('image');
 
+app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(publicDir));
+
+const measureQuizSize = (quiz) => {
+  const serialized = serializeQuiz(quiz);
+  return Buffer.byteLength(JSON.stringify(serialized), 'utf-8');
+};
+
+const dropQuiz = (code) => {
+  const quiz = quizzes.get(code);
+  if (!quiz) {
+    return false;
+  }
+
+  io.to(code).emit('systemMessage', 'Квиз удалён администратором.');
+  io.in(code).socketsLeave(code);
+  quizzes.delete(code);
+  schedulePersist();
+  return true;
+};
 
 app.get(['/display', '/display.html'], (_req, res) => {
   res.sendFile(path.join(publicDir, 'display.html'));
@@ -236,6 +258,50 @@ app.get(['/display', '/display.html'], (_req, res) => {
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/api/quizzes', (_req, res) => {
+  const summary = Array.from(quizzes.values()).map((quiz) => ({
+    code: quiz.code,
+    createdAt: quiz.createdAt,
+    questionCount: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
+    sizeBytes: measureQuizSize(quiz)
+  }));
+
+  res.json({ quizzes: summary });
+});
+
+app.delete('/api/quizzes/:code', (req, res) => {
+  const { code } = req.params;
+  if (!code) {
+    res.status(400).json({ error: 'Неверный код квиза.' });
+    return;
+  }
+
+  const normalizedCode = code.trim().toUpperCase();
+  if (!dropQuiz(normalizedCode)) {
+    res.status(404).json({ error: 'Квиз не найден.' });
+    return;
+  }
+
+  res.json({ success: true, code: normalizedCode });
+});
+
+app.post('/api/quizzes/bulk-delete', (req, res) => {
+  const { codes } = req.body || {};
+  if (!Array.isArray(codes) || codes.length === 0) {
+    res.status(400).json({ error: 'Передайте массив кодов для удаления.' });
+    return;
+  }
+
+  const normalizedCodes = codes
+    .map((value) => (typeof value === 'string' ? value.trim().toUpperCase() : ''))
+    .filter((value) => value.length > 0);
+
+  const uniqueCodes = Array.from(new Set(normalizedCodes));
+  const deleted = uniqueCodes.filter((code) => dropQuiz(code));
+
+  res.json({ success: true, deleted });
 });
 
 app.post('/api/upload-image', (req, res) => {
