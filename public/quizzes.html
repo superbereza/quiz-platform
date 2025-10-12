@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Архив квизов — Retro Quiz</title>
+    <link rel="stylesheet" href="css/retro.css" />
+  </head>
+  <body class="star-bg">
+    <div class="wrapper wide">
+      <header class="header">
+        <h1>Архив квизов</h1>
+        <p>Просматривайте сохранённые квизы, следите за занимаемым местом и очищайте память.</p>
+        <p>
+          <a class="button secondary" href="/admin.html">Вернуться в панель ведущего</a>
+        </p>
+      </header>
+      <main class="content column">
+        <section class="panel" id="quizzes-panel">
+          <div class="panel-head">
+            <h2>Сохранённые квизы</h2>
+            <div class="panel-actions">
+              <label class="select-all">
+                <input type="checkbox" id="select-all" />
+                Выбрать все
+              </label>
+              <button id="delete-selected" class="button danger" disabled>Удалить выбранные</button>
+            </div>
+          </div>
+          <p class="hint">Нажмите на заголовок столбца, чтобы отсортировать по дате создания или размеру.</p>
+          <div class="table-wrapper">
+            <table class="data-table" id="quizzes-table">
+              <thead>
+                <tr>
+                  <th scope="col" class="col-select"></th>
+                  <th scope="col">Код</th>
+                  <th scope="col">
+                    <button type="button" class="sort-button" data-sort="createdAt">
+                      Дата создания
+                      <span class="sort-indicator" aria-hidden="true">⇅</span>
+                    </button>
+                  </th>
+                  <th scope="col">Вопросов</th>
+                  <th scope="col">
+                    <button type="button" class="sort-button" data-sort="sizeBytes">
+                      Размер
+                      <span class="sort-indicator" aria-hidden="true">⇅</span>
+                    </button>
+                  </th>
+                  <th scope="col" class="col-actions">Действия</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <p id="total-size" class="hint">Всего квизов: 0 • Общий размер: 0 Б</p>
+            <p id="action-status" class="table-status" role="status" aria-live="polite"></p>
+          </div>
+        </section>
+      </main>
+      <footer class="footer">
+        <p>Retro Quiz — управление памятью в одном месте.</p>
+      </footer>
+    </div>
+    <script src="js/quizzes.js"></script>
+  </body>
+</html>
