@@ -14,8 +14,39 @@
           <a class="button secondary" href="/quizzes.html">Посмотреть сохранённые квизы</a>
         </p>
       </header>
-      <main class="content admin-grid">
-        <section class="panel" id="connect-panel">
+      <main class="admin-tabs">
+        <div class="tab-nav" role="tablist" aria-label="Разделы панели ведущего">
+          <button
+            class="tab-button tab-button--active"
+            type="button"
+            role="tab"
+            data-tab="connect"
+            aria-selected="true"
+          >
+            1. Код квиза
+          </button>
+          <button
+            class="tab-button"
+            type="button"
+            role="tab"
+            data-tab="edit"
+            aria-selected="false"
+            disabled
+          >
+            2. Редактирование
+          </button>
+          <button
+            class="tab-button"
+            type="button"
+            role="tab"
+            data-tab="control"
+            aria-selected="false"
+            disabled
+          >
+            3. Управление игрой
+          </button>
+        </div>
+        <section class="panel" id="connect-panel" data-tab-panel="connect">
           <h2>1. Код квиза</h2>
           <p>Придумайте короткий код и поделитесь им с друзьями.</p>
           <ol class="hint-list">
@@ -31,7 +62,7 @@
           <p id="connect-status" class="status-line"></p>
         </section>
 
-        <section class="panel" id="question-panel" hidden>
+        <section class="panel" id="question-panel" data-tab-panel="edit" hidden>
           <h2>2. Вопрос</h2>
           <form id="question-form">
             <label>Текст вопроса:<br /><textarea id="question-text" rows="3" required></textarea></label>
@@ -63,7 +94,7 @@
           </div>
         </section>
 
-        <section class="panel" id="control-panel" hidden>
+        <section class="panel" id="control-panel" data-tab-panel="control" hidden>
           <h2>3. Управление игрой</h2>
           <p id="game-status" class="status-line"></p>
           <button id="launch-question" class="button">Запустить следующий вопрос</button>
@@ -81,7 +112,7 @@
         </section>
       </main>
       <footer class="footer">
-        <p>Панель ведущего Retro Quiz. Никаких лишних вкладок — только олдскул.</p>
+        <p>Панель ведущего Retro Quiz: всё под рукой, теперь на отдельных вкладках.</p>
       </footer>
     </div>
     <script src="/socket.io/socket.io.js"></script>

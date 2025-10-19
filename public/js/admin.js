@@ -17,12 +17,76 @@ const revealButton = document.getElementById('reveal-results');
 const finalButton = document.getElementById('final-results');
 const restartButton = document.getElementById('restart-quiz');
 const gameStatus = document.getElementById('game-status');
+const tabButtons = Array.from(document.querySelectorAll('[data-tab]'));
+const tabPanels = Array.from(document.querySelectorAll('[data-tab-panel]'));
 
 let quizCode = '';
 let lastScoreboard = [];
 let uploadingImage = false;
 let dragStartOrder = [];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+const tabs = tabButtons.reduce((acc, button) => {
+  const tabName = button.dataset.tab;
+  const panel = tabPanels.find((element) => element.dataset.tabPanel === tabName);
+  if (tabName && panel) {
+    acc[tabName] = { button, panel };
+    if (button.disabled) {
+      button.setAttribute('aria-disabled', 'true');
+    }
+  }
+  return acc;
+}, {});
+
+let activeTab = 'connect';
+
+const setActiveTab = (name) => {
+  const target = tabs[name];
+  if (!target || target.button.disabled) {
+    return;
+  }
+
+  Object.entries(tabs).forEach(([tabName, { button, panel }]) => {
+    const isActive = tabName === name;
+    button.classList.toggle('tab-button--active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
+    panel.hidden = !isActive;
+  });
+
+  activeTab = name;
+};
+
+const setTabAvailability = (name, available) => {
+  const tab = tabs[name];
+  if (!tab) {
+    return;
+  }
+
+  tab.button.disabled = !available;
+  tab.button.setAttribute('aria-disabled', String(!available));
+
+  if (!available) {
+    tab.panel.hidden = true;
+    if (activeTab === name) {
+      setActiveTab('connect');
+    }
+  }
+};
+
+tabButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    if (button.disabled) {
+      return;
+    }
+    const tabName = button.dataset.tab;
+    if (tabName) {
+      setActiveTab(tabName);
+    }
+  });
+});
+
+setActiveTab('connect');
+setTabAvailability('connect', true);
 
 const setUploadStatus = (message = '', variant = 'idle') => {
   if (!imageUploadStatus) return;
@@ -359,8 +423,9 @@ if (questionsList) {
 socket.on('adminState', ({ code, questions, players, currentQuestionIndex, questionActive }) => {
   quizCode = code;
   connectStatus.textContent = `Вы управляете квизом ${code}. Добавьте вопросы и зовите игроков!`;
-  questionPanel.hidden = false;
-  controlPanel.hidden = false;
+  setTabAvailability('edit', true);
+  setTabAvailability('control', true);
+  setActiveTab('edit');
   renderQuestions(questions);
   renderPlayers(players);
   if (!questionActive) {
@@ -437,4 +502,6 @@ socket.on('errorMessage', (message) => {
 
 socket.on('disconnect', () => {
   connectStatus.textContent = 'Связь потеряна. Проверьте интернет и обновите страницу.';
+  setTabAvailability('edit', false);
+  setTabAvailability('control', false);
 });

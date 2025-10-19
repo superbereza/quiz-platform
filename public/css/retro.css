@@ -52,6 +52,52 @@ body {
   gap: 24px;
 }
 
+.admin-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+.tab-button {
+  flex: 1 1 180px;
+  min-width: 160px;
+  padding: 10px 16px;
+  border: 2px solid #ffe680;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffe680;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(255, 191, 0, 0.4);
+  transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+}
+
+.tab-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 14px rgba(255, 191, 0, 0.7);
+}
+
+.tab-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.tab-button--active {
+  background: linear-gradient(180deg, rgba(255, 95, 109, 0.85), rgba(255, 195, 113, 0.85));
+  color: #1f0035;
+  box-shadow: 0 0 18px rgba(255, 191, 0, 0.9);
+  transform: translateY(-1px);
+}
+
 .panel {
   background: rgba(0, 0, 0, 0.7);
   border: 3px double #ffbf00;
